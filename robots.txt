@@ -1,0 +1,23 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://fanniceramic.com/sitemap.xml
+
+# Crawl-delay for better server performance
+Crawl-delay: 1
+
+# Block admin panel from search engines
+Disallow: /admin.html
+
+# Allow all images
+Allow: /*.jpg
+Allow: /*.jpeg
+Allow: /*.png
+Allow: /*.gif
+Allow: /*.webp
+
+# Block unnecessary files
+Disallow: /*.css$
+Disallow: /*.js$
+Disallow: /config.js

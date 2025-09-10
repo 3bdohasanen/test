@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .admin-wrap {
+            max-width: 900px;
+            margin: 60px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, .1)
+        }
+
+        .admin-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px
+        }
+
+        .admin-grid .field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px
+        }
+
+        .admin-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-start;
+            margin-top: 15px
+        }
+
+        .pass-gate {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 15px
+        }
+
+        textarea {
+            min-height: 120px
+        }
+
+        @media(max-width:768px) {
+            .admin-grid {
+                grid-template-columns: 1fr
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="admin-wrap">
+        <h2>لوحة التحكم</h2>
+        <div class="pass-gate">
+            <input type="password" id="adminPass" placeholder="كلمة المرور">
+            <button id="unlock" class="btn btn-primary">فتح</button>
+            <span id="gateMsg" style="color:#e63946"></span>
+        </div>
+        <div id="adminForm" style="display:none">
+            <div class="admin-grid">
+                <div class="field">
+                    <label>اسم النشاط</label>
+                    <input id="name" type="text">
+                </div>
+                <div class="field">
+                    <label>الهاتف</label>
+                    <input id="phone" type="text">
+                </div>
+                <div class="field">
+                    <label>واتساب</label>
+                    <input id="whatsapp" type="text">
+                </div>
+                <div class="field">
+                    <label>المدينة</label>
+                    <input id="city" type="text">
+                </div>
+                <div class="field">
+                    <label>عنوان الهيرو</label>
+                    <input id="heroTitleField" type="text">
+                </div>
+                <div class="field">
+                    <label>سطر فرعي للهيرو</label>
+                    <input id="heroSubtitleField" type="text">
+                </div>
+                <div class="field">
+                    <label>وصف قصير</label>
+                    <input id="heroTaglineField" type="text">
+                </div>
+            </div>
+            <div class="field" style="margin-top:15px">
+                <label>نقاط تميز (سطر لكل نقطة)</label>
+                <textarea id="usps"></textarea>
+            </div>
+            <div class="field">
+                <label>FAQ (صيغة: سؤال|||إجابة في كل سطر)</label>
+                <textarea id="faq"></textarea>
+            </div>
+            <hr style="margin:20px 0">
+            <h3>المعرض</h3>
+            <div class="field">
+                <label>إضافة صورة (رفع ملف أو رابط)</label>
+                <div style="display:flex;gap:10px;flex-wrap:wrap">
+                    <input type="file" id="galFile" accept="image/*">
+                    <input type="text" id="galUrl" placeholder="رابط الصورة (اختياري)">
+                    <input type="text" id="galAlt" placeholder="نص بديل">
+                    <select id="galCat">
+                        <option value="ceramic">سيراميك</option>
+                        <option value="porcelain">بورسلين</option>
+                        <option value="marble">رخام</option>
+                    </select>
+                    <input type="text" id="galTitle" placeholder="عنوان">
+                    <input type="text" id="galSub" placeholder="وصف قصير">
+                    <button id="addImg" class="btn btn-primary">إضافة</button>
+                </div>
+            </div>
+            <div id="galList" class="admin-grid" style="margin-top:10px"></div>
+
+            <div class="admin-actions">
+                <button id="save" class="btn btn-primary">حفظ</button>
+                <button id="exportCfg" class="btn btn-secondary">تصدير</button>
+                <input type="file" id="importFile" accept="application/json" style="display:none">
+                <button id="importCfg" class="btn btn-secondary">استيراد</button>
+                <button id="reset" class="btn">إعادة الافتراضي</button>
+            </div>
+            <div id="status" style="margin-top:10px;color:green"></div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        const PASS = '60707610';
+        const gate = document.getElementById('adminForm');
+        document.getElementById('unlock').addEventListener('click', () => {
+            const ok = document.getElementById('adminPass').value === PASS;
+            document.getElementById('gateMsg').textContent = ok ? '' : 'كلمة المرور غير صحيحة';
+            gate.style.display = ok ? 'block' : 'none';
+            if (ok) load();
+        });
+
+        function getCfg() {
+            try { const s = localStorage.getItem('site_config'); if (s) return JSON.parse(s); } catch (e) { }
+            return window.SITE_DEFAULT_CONFIG;
+        }
+        function setCfg(cfg) { localStorage.setItem('site_config', JSON.stringify(cfg)); }
+
+        function load() {
+            const c = getCfg();
+            document.getElementById('name').value = c.business?.name || '';
+            document.getElementById('phone').value = c.business?.phone || '';
+            document.getElementById('whatsapp').value = c.business?.whatsapp || '';
+            document.getElementById('city').value = c.business?.city || '';
+            document.getElementById('heroTitleField').value = c.hero?.title || '';
+            document.getElementById('heroSubtitleField').value = c.hero?.subtitle || '';
+            document.getElementById('heroTaglineField').value = c.hero?.tagline || '';
+            document.getElementById('usps').value = (c.promo?.usps || []).join('\n');
+            document.getElementById('faq').value = (c.faq || []).map(f => `${f.q}|||${f.a}`).join('\n');
+            renderGal();
+        }
+
+        document.getElementById('save').addEventListener('click', () => {
+            const cfg = getCfg();
+            cfg.business = {
+                name: document.getElementById('name').value,
+                phone: document.getElementById('phone').value,
+                whatsapp: document.getElementById('whatsapp').value,
+                city: document.getElementById('city').value,
+            };
+            cfg.hero = {
+                title: document.getElementById('heroTitleField').value,
+                subtitle: document.getElementById('heroSubtitleField').value,
+                tagline: document.getElementById('heroTaglineField').value,
+            };
+            cfg.promo = { usps: document.getElementById('usps').value.split('\n').filter(Boolean) };
+            cfg.faq = document.getElementById('faq').value.split('\n').filter(Boolean).map(line => {
+                const [q, a] = line.split('|||');
+                return { q: q || '', a: a || '' };
+            });
+            setCfg(cfg);
+            document.getElementById('status').textContent = 'تم الحفظ. افتح الصفحة الرئيسية للتحديث.';
+        });
+
+        document.getElementById('exportCfg').addEventListener('click', () => {
+            const blob = new Blob([JSON.stringify(getCfg(), null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'site_config.json'; a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        document.getElementById('importCfg').addEventListener('click', () => document.getElementById('importFile').click());
+        document.getElementById('importFile').addEventListener('change', (e) => {
+            const file = e.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => { try { setCfg(JSON.parse(reader.result)); load(); document.getElementById('status').textContent = 'تم الاستيراد والحفظ.' } catch (err) { alert('ملف غير صالح'); } };
+            reader.readAsText(file);
+        });
+
+        document.getElementById('reset').addEventListener('click', () => {
+            localStorage.removeItem('site_config');
+            load();
+            document.getElementById('status').textContent = 'تمت إعادة الإعدادات الافتراضية.';
+        });
+
+        function renderGal() {
+            const box = document.getElementById('galList');
+            const c = getCfg();
+            const list = c.gallery || [];
+            box.innerHTML = list.map((g, idx) => `
+        <div class="field" style="border:1px solid #eee;padding:10px;border-radius:8px">
+          <div style="display:flex;gap:10px;align-items:center">
+            <img src="${g.src}" alt="" style="width:80px;height:60px;object-fit:cover;border-radius:6px">
+            <div style="flex:1">
+              <div>${g.title || ''}</div>
+              <div style=\"opacity:.7;font-size:.9rem\">${g.category || ''}</div>
+            </div>
+            <button data-idx="${idx}" class="btn">حذف</button>
+          </div>
+        </div>
+      `).join('');
+            box.querySelectorAll('button[data-idx]').forEach(btn => btn.addEventListener('click', () => {
+                const i = parseInt(btn.getAttribute('data-idx'));
+                const cfg = getCfg();
+                (cfg.gallery || []).splice(i, 1);
+                localStorage.setItem('site_config', JSON.stringify(cfg));
+                renderGal();
+                document.getElementById('status').textContent = 'تم حذف الصورة.';
+            }));
+        }
+
+        document.getElementById('addImg').addEventListener('click', () => {
+            const file = document.getElementById('galFile').files[0];
+            const url = document.getElementById('galUrl').value.trim();
+            const alt = document.getElementById('galAlt').value.trim();
+            const cat = document.getElementById('galCat').value;
+            const title = document.getElementById('galTitle').value.trim();
+            const sub = document.getElementById('galSub').value.trim();
+            const push = (src) => {
+                const cfg = getCfg();
+                cfg.gallery = cfg.gallery || [];
+                cfg.gallery.push({ src: src, alt: alt, category: cat, title: title, subtitle: sub });
+                localStorage.setItem('site_config', JSON.stringify(cfg));
+                renderGal();
+                document.getElementById('status').textContent = 'تمت إضافة الصورة.';
+            };
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = () => push(reader.result);
+                reader.readAsDataURL(file);
+            } else if (url) {
+                push(url);
+            } else {
+                alert('اختر ملفاً أو أدخل رابط الصورة');
+            }
+        });
+    </script>
+</body>
+
+</html>
